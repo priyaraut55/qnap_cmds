@@ -1,0 +1,62 @@
+#!/usr/bin/python
+import sys
+import argparse
+def exec_commands():
+    #execute commands
+    print "Executing Arguments"
+def parse_Arguments():
+    #parse arguments
+    print "Parsing Arguments"
+def setup_SubCommands():
+    #need to setup subCommands
+
+    parser = argparse.ArgumentParser()
+
+    subparsers = parser.add_subparsers(help='commands')
+
+    # A list command
+    list_parser = subparsers.add_parser('list', help='List contents')
+    #list_parser.add_argument('dirname', action='store', help='Directory to list')
+
+    # A create command
+    create_parser = subparsers.add_parser('create', help='Create a directory')
+    create_parser.add_argument('dirname', action='store', help='New directory to create')
+    create_parser.add_argument('--read-only', default=False, action='store_true',
+                               help='Set permissions to prevent writing to the directory',
+                               )
+
+    #Add device command
+    add_device_parser = subparsers.add_parser('add_device', help='add a new device using handler')
+    add_device_parser.add_argument('-n', action='store', help='device name')
+#    add_device_parser.add_argument('-h', action='store', help='handler')
+    add_device_parser.add_argument('-f', action='store', help='file name')
+
+    #Delete device command
+    del_parser = subparsers.add_parser('del_device', help='delete a device belonging to handler')
+    del_parser.add_argument('-n', action='store', help='device name')
+#    del_parser.add_argument('-h', action='store', help='handler')
+
+
+    #Set device attribute command
+    setattr_parser = subparsers.add_parser('set_dev_attr', help='set device attribute(s)')
+    setattr_parser.add_argument('-n', action='store', help='device name')
+#    setattr_parser.add_argument('-h', action='store', help='handler')
+
+    # A delete command
+    delete_parser = subparsers.add_parser('delete', help='Remove a directory')
+    delete_parser.add_argument('dirname', action='store', help='The directory to remove')
+    delete_parser.add_argument('--recursive', '-r', default=False, action='store_true',
+                               help='Remove the contents of the directory, too',
+                               )
+
+    print parser.parse_args()
+    print "Setting up SubCommands"
+
+def main():
+    print "Starting main"
+    setup_SubCommands()
+    parse_Arguments()
+    exec_commands()
+
+if __name__ == "__main__":
+    main()
