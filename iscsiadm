@@ -1,0 +1,111 @@
+#!/usr/bin/python2.7
+
+import sys
+import argparse
+import subprocess
+import pdb
+
+#populate this map as key value pairs based on options sent in the user
+iscsi_target_options_set = {}
+
+class CmndAction(argparse.Action):
+    def __init__(self, option_strings, dest, nargs=None, **kwargs):
+        if nargs is not None:
+            raise ValueError("nargs not allowed")
+        super(CmndAction, self).__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        print '%r %r %r' % (namespace, values, option_string)
+        setattr(namespace, self.dest, values)
+        add_device_options_set[option_string] = {}
+        add_device_options_set[option_string]['isset'] = True
+        add_device_options_set[option_string]['value'] = values
+
+def default_exec():
+    try:
+        print "Doing some commands"
+        print "Executing Arguments"
+
+        path="/sys/kernel/scst_tgt/targets/iscsi/mgmt"
+        if(sys.argv[1]=="add_target"):	
+            cmd='echo "'+ 'add_target '+sys.argv[2] +' ">' + path
+            output = subprocess.check_output(cmd, shell=True)
+            print "Added Target successfully ",output
+        elif(sys.argv[1]=="del_target"):
+            cmd='echo "'+ 'del_target '+sys.argv[2] +' ">' + path
+            output = subprocess.check_output(cmd, shell=True)
+            print "Deleted Target ",output
+            
+        else:
+            output=subprocess.check_output("scstadmin -list_target", shell=True )		
+            print "list_target ",output
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+
+def set_threshold_exec(cmnd_opts, threshold):
+    try:
+        output = subprocess.check_output(["ls","-l"], shell=True)
+        print output, cmnd_opts
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+
+def set_name(cmnd_opts, value):
+    print "please set name"
+    iscsi_target_options_set['--dirname']
+
+
+#set of commands to run for the options set
+add_iscsi_target_exec = {"default"  : default_exec,
+                   "--P"      : set_threshold_exec,
+                   "--dirname": set_name
+                   }
+def exec_commands(cmnd_opts):
+#execute commands
+#    subprocess.check_output(cmd, shell=True)
+    pdb.set_trace();  
+    add_iscsi_target_exec["default"]();
+    for i in iscsi_target_options_set.iterkeys():
+        if iscsi_target_options_set[i]['isset'] == True:
+            iscsi_target_exec[i](cmnd_opts, iscsi_target_options_set[i]['value'])
+
+
+def parse_Arguments(parser):
+    #parse arguments
+    print "Parsing Arguments"
+    arg1 = parser.parse_args()
+
+def setup_SubCommands():
+    #need to setup subCommands
+    parser = argparse.ArgumentParser()
+
+    subparsers = parser.add_subparsers(help='commands')
+
+    #Add target command
+    add_target_parser = subparsers.add_parser('add_target', help='add a target iqn')
+    add_target_parser.add_argument("iqn", help="Unknown pos args sequence", nargs=1)	
+    add_target_parser.add_argument("-M", help="Max Session for this target per Initiator", nargs=1)	
+
+    #get target command
+    get_target_parser = subparsers.add_parser('get_target', help='get a target iqn')
+  #  get_target_parser.add_argument("pos_args", help="Unknown pos args sequence", nargs=1)	
+
+
+    #delete target command
+    delete_target_parser = subparsers.add_parser('del_target', help='delete a target iqn')
+    delete_target_parser.add_argument("iqn", help="Unknown pos args sequence", nargs=1)	
+
+    return parser
+    print parser.parse_args()
+    print "Setting up SubCommands"
+
+def main():
+    print "Starting main"
+#    import pdb; pdb.set_trace();
+    parser = setup_SubCommands()
+    parse_Arguments(parser)
+    exec_commands(parser.parse_args())
+
+if __name__ == "__main__":
+    main()
