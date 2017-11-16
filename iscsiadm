@@ -58,8 +58,9 @@ def set_enable_exec(cmnd_opts,value):
     pdb.set_trace();
     try:
         cmd="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/enabled"
-        com="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/enabled"
+        com="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/enabled"
         output = subprocess.check_output(cmd, shell=True)
+        output1 = subprocess.check_output(com, shell=True)
     except subprocess.CalledProcessError:
         print "error Executing the command"
 
