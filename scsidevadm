@@ -24,9 +24,7 @@ def add_default_exec(cmnd_opts):
     try:
         print "Enter into add_device"
         path = '/sys/kernel/scst_tgt/handlers/vdisk_blockio/mgmt'
-        com = 'add_device '  +cmnd_opts.n+ ' filename=' +cmnd_opts.f+  ' ">'
-        cmd = 'echo "' + com +path
-#        pdb.set_trace();	
+        cmd='echo "'+ 'add_device ' +cmnd_opts.n+ ' filename=' +cmnd_opts.f+  ' ">' + path  
         print "=====Doing add_device====="
         subprocess.check_output(cmd, shell=True )
         print "=====leaving add_device====="
@@ -38,12 +36,13 @@ def delete_default_exec(cmnd_opts):
     try:
         print "Enter into del_device"
         path = '/sys/kernel/scst_tgt/handlers/vdisk_blockio/mgmt'
-        com = 'del_device '  +cmnd_opts.n+ ' ">'
-        cmd = 'echo "' + com +path
-        #pdb.set_trace();
+        cmd='echo "del_device '  +cmnd_opts.n+ ' ">' + path  
         print "=====Doing delete device====="
         subprocess.check_output(cmd, shell=True )
         print "=====leaving del_device====="
+        #com = 'del_device '  +cmnd_opts.n+ ' ">'
+        #cmd = 'echo "' + com +path
+        #pdb.set_trace();
 
     except subprocess.CalledProcessError:
         print "error Executing the del_device command"
@@ -83,12 +82,9 @@ def set_usn_exec(cmnd_opts):
         path = '/sys/kernel/scst_tgt/devices/' +cmnd_opts.n
 
         if cmnd_opts.u is not None:
-            cmd = 'echo' + cmnd_opts.u + ' >' +path+ '/usn'
+            cmd = 'echo ' + cmnd_opts.u + ' >' +path+ '/usn'
             subprocess.check_output(cmd, shell=True )
 
-
-
- 
         #pdb.set_trace();
         print "=====Doing delete device====="
         subprocess.check_output(cmd, shell=True )
@@ -137,6 +133,7 @@ list_device_exec = {"default"  : list_default_exec
 set_device_exec = {"default"    : set_default_exec,
                     "--usn"     : set_usn_exec,
                     "-u"        : set_usn_exec,
+                    "--usn"        : set_usn_exec,
                     "--threads" : set_thread_exec,
                     "-t"        : set_thread_exec,
                     }
@@ -155,6 +152,12 @@ def exec_commands(cmnd_opts):
         delete_device_exec["default"](cmnd_opts);
     if sys.argv[1] == "list_device":
         list_device_exec["default"](cmnd_opts);
+    if sys.argv[1] == "set_dev_attr":
+        #pdb.set_trace();
+        for i in add_device_options_set.iterkeys():
+            if add_device_options_set[i]['isset'] == True:
+                set_device_exec[i](cmnd_opts)
+
 
 def parse_Arguments(parser):
     #parse arguments
@@ -170,24 +173,24 @@ def setup_SubCommands():
 
     # A add device command
     addDevice_parser = subparsers.add_parser('add_device', help='Add a new device')
-    addDevice_parser.add_argument('-n', action='store', help='Device name')
-    addDevice_parser.add_argument('-f', action='store', help='File name')
+    addDevice_parser.add_argument('-n', action='store', help='Device name', required=True)
+    addDevice_parser.add_argument('-f', action='store', help='File name', required=True)
 
     # A delete device command
     deleteDevice_parser = subparsers.add_parser('del_device', help='Delete a device belonging to handler')
-    deleteDevice_parser.add_argument('-n', action='store', help='Device name')
+    deleteDevice_parser.add_argument('-n', action=CmndAction, help='Device name', required=True)
 
     # A list device command
     listDevice_parser = subparsers.add_parser('list_device', help='Delete a device belonging to handler')
 
     # A set device attribute command
     setDevice_parser = subparsers.add_parser('set_dev_attr', help='Set device attribute')
-    setDevice_parser.add_argument('-n', action='store', help='Device name', required=True)
-    setDevice_parser.add_argument('-u', action='store', help='usn', required=False)
-    setDevice_parser.add_argument('-t', action='store', help='thread_num', required=False)
-    setDevice_parser.add_argument('-l', action='store', help='threads_pool_type', required=False)
-    setDevice_parser.add_argument('-i', action='store', help='t10_dev_id', required=False)
-    setDevice_parser.add_argument('-P', action='store', help='thin_provisioned', required=False)
+    setDevice_parser.add_argument('-n', dest="dev_name", action='store', help='Device name', required=True)
+    setDevice_parser.add_argument('-u', "--usn", action=CmndAction, help='usn', required=False)
+    setDevice_parser.add_argument('-t', action=CmndAction, help='thread_num', required=False)
+    setDevice_parser.add_argument('-l', action=CmndAction, help='threads_pool_type', required=False)
+    setDevice_parser.add_argument('-i', action=CmndAction, help='t10_dev_id', required=False)
+    setDevice_parser.add_argument('-P', action=CmndAction, help='thin_provisioned', required=False)
 
 
     # A create command

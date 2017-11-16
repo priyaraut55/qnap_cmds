@@ -1,0 +1,147 @@
+#!/usr/bin/python
+import sys
+import argparse
+import subprocess
+import pdb
+#populate this map as key value pairs based on options sent in the user
+add_lun_options_set = {}
+
+class CmndAction(argparse.Action):
+    def __init__(self, option_strings, dest, nargs=None, **kwargs):
+        if nargs is not None:
+            raise ValueError("nargs not allowed")
+        super(CmndAction, self).__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+#        print '%r %r %r' % (namespace, values, option_string)
+        setattr(namespace, self.dest, values)
+        add_lun_options_set[option_string] = {}
+        add_lun_options_set[option_string]['isset'] = True
+        add_lun_options_set[option_string]['value'] = values
+
+def add_default_exec(cmnd_opts):
+    try:
+        print "Doing some commands"
+        path = '/sys/kernel/scst_tgt/targets/' +cmnd_opts.d+ '/' +cmnd_opts.t+ '/ini_groups/mygroup/luns/mgmt'
+        cmd='echo "add ' +cmnd_opts.D+ ' ' +cmnd_opts.l+ ' ">' + path
+        subprocess.check_output(cmd, shell=True )
+	    #pdb.set_trace();
+    except subprocess.CalledProcessError:
+        print "error Executing the command"   
+
+def del_default_exec(cmnd_opts):
+    try:
+        print "Enter into del_lun"
+        path = '/sys/kernel/scst_tgt/targets/' +cmnd_opts.d+ "/" +cmnd_opts.t+ '/ini_groups/mygroup/luns/mgmt'
+        cmd='echo "del ' +cmnd_opts.l+ ' ">' + path
+        print "=====Doing delete device====="
+        subprocess.check_output(cmd, shell=True )
+        print "=====Successfully deleted device====="
+        print "=====leaving del_device====="
+        #com = 'del '  +cmnd_opts.l+ ' ">'
+        #cmd = 'echo "' + com +path
+        #pdb.set_trace();
+
+    except subprocess.CalledProcessError:
+        print "error Executing the del_device command"
+
+def get_default_exec(cmnd_opts):
+    try:
+        print "Enter into get_lun"
+        print "=====Doing get_lun===="
+        cmd = 'scstadmin -list_target ' +cmnd_opts.t + ' -driver ' +cmnd_opts.d
+        output = subprocess.check_output(cmd, shell=True )
+        print output
+        print "=====leaving get_lun====="
+    except subprocess.CalledProcessError:
+        print "error Executing the get_lun command"
+
+def get_scst_exec(cmnd_opts):
+    try:
+        print "Enter into get_scst_attr"
+        print "=====Doing get_scst_attr===="
+        output = subprocess.check_output("scstadmin -list_scst_attr", shell=True )
+        print output
+        print "=====leaving get_scst_attr====="
+    except subprocess.CalledProcessError:
+        print "error Executing the get_scst_attr command"
+
+def set_default_exec(cmnd_opts):
+    print "dummy nothing to do"
+
+#set of commands to run for the options set
+add_lun_exec = {"default"  : add_default_exec
+#                   "-e"    : detached_exec,
+#                    "r"     : readonly
+                   }
+
+del_lun_exec = {"default"  : del_default_exec
+                   }
+
+get_lun_exec = {"default"  : get_default_exec
+                   }
+
+get_scst_exec = {"default"  : get_scst_exec
+                   }
+
+def exec_commands(cmnd_opts):
+    #execute commands
+    print "Executing Arguments"
+    if sys.argv[1] == "add_lun":
+        add_lun_exec["default"](cmnd_opts);
+        for i in add_lun_options_set.iterkeys():
+            if add_lun_options_set[i]['isset'] == True:
+                add_lun_exec[i](cmnd_opts, add_lun_options_set[i]['value'])
+    if sys.argv[1] == "del_lun":
+        del_lun_exec["default"](cmnd_opts);
+    if sys.argv[1] == "get_lun":
+        get_lun_exec["default"](cmnd_opts);
+    if sys.argv[1] == "get_scst_attr":
+        get_scst_exec["default"](cmnd_opts);
+
+
+def parse_Arguments(parser):
+    #parse arguments
+    print "Parsing Arguments"
+    arg1 = parser.parse_args()
+
+def setup_SubCommands():
+    #need to setup subCommands
+
+    parser = argparse.ArgumentParser()
+
+    subparsers = parser.add_subparsers(help='commands')
+
+    # A list command
+    addLun_parser = subparsers.add_parser('add_lun', help='Add lun to the target')
+    addLun_parser.add_argument('-d', action=CmndAction, help='driver name', required=True)
+    addLun_parser.add_argument('-t', action=CmndAction, help='target name', required=True)
+    addLun_parser.add_argument('-D', action=CmndAction, help='device name create by add_device', required=True)
+    addLun_parser.add_argument('-l', action=CmndAction, help='LUN', required=True)
+
+    # A delete command
+    delLun_parser = subparsers.add_parser('del_lun', help='Add lun to the target')
+    delLun_parser.add_argument('-d', action=CmndAction, help='driver name', required=True)
+    delLun_parser.add_argument('-t', action=CmndAction, help='target name', required=True)
+    delLun_parser.add_argument('-l', action=CmndAction, help='LUN', required=True)
+
+    # A get_lun command
+    getLun_parser = subparsers.add_parser('get_lun', help='Get all lun in target')
+    getLun_parser.add_argument('-d', action=CmndAction, help='driver name', required=True)
+    getLun_parser.add_argument('-t', action=CmndAction, help='target name', required=True)
+
+    # A get_scst_attr command
+    get_scstLun_parser = subparsers.add_parser('get_scst_attr', help='Get scst module attribute')
+
+
+    return parser
+    print "Setting up SubCommands"
+
+def main():
+    print "Starting main"
+    parser = setup_SubCommands()
+    parse_Arguments(parser)
+    exec_commands(parser.parse_args())
+
+if __name__ == "__main__":
+    main()
