@@ -1,10 +1,8 @@
 #!/usr/bin/python2.7
-
 import sys
 import argparse
 import subprocess
 import pdb
-
 #populate this map as key value pairs based on options sent in the user
 iscsi_target_options_set = {}
 
@@ -17,12 +15,13 @@ class CmndAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         print '%r %r %r' % (namespace, values, option_string)
         setattr(namespace, self.dest, values)
-        add_device_options_set[option_string] = {}
-        add_device_options_set[option_string]['isset'] = True
-        add_device_options_set[option_string]['value'] = values
+        iscsi_target_options_set[option_string] = {}
+        iscsi_target_options_set[option_string]['isset'] = True
+        iscsi_target_options_set[option_string]['value'] = values
 
-def default_exec():
+def default_exec(cmnd_opts):
     try:
+        pdb.set_trace();
         print "Doing some commands"
         print "Executing Arguments"
 
@@ -34,14 +33,15 @@ def default_exec():
         elif(sys.argv[1]=="del_target"):
             cmd='echo "'+ 'del_target '+sys.argv[2] +' ">' + path
             output = subprocess.check_output(cmd, shell=True)
-            print "Deleted Target ",output
-            
+            print "Deleted Target successfully",output
+        elif(sys.argv[1]=="add_acl_initiator"):
+#            cmd= 'echo "add '+''.join(map(str,cmd_opts.initiator_node)) +'">'+" /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/ini_groups/priya/initiators"            
+            cmd= 'echo "add '+str(cmnd_opts.initiator_node[1])+' ">'+" /sys/kernel/scst_tgt/targets/iscsi/"+str(cmnd_opts.initiator_node[0])+"/ini_groups/priya/initiators/mgmt"            
         else:
             output=subprocess.check_output("scstadmin -list_target", shell=True )		
-            print "list_target ",output
+            print "listing the existing targets ",output
     except subprocess.CalledProcessError:
         print "error Executing the command"
-
 
 def set_threshold_exec(cmnd_opts, threshold):
     try:
@@ -50,25 +50,39 @@ def set_threshold_exec(cmnd_opts, threshold):
     except subprocess.CalledProcessError:
         print "error Executing the command"
 
-
 def set_name(cmnd_opts, value):
     print "please set name"
     iscsi_target_options_set['--dirname']
 
+def set_enable_exec(cmnd_opts,value):
+    pdb.set_trace();
+    try:
+        cmd="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/enabled"
+        com="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/enabled"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
 
 #set of commands to run for the options set
 add_iscsi_target_exec = {"default"  : default_exec,
+                   "--Enable"      : set_enable_exec,
+                   "-E"      : set_enable_exec,
                    "--P"      : set_threshold_exec,
                    "--dirname": set_name
                    }
 def exec_commands(cmnd_opts):
 #execute commands
 #    subprocess.check_output(cmd, shell=True)
-    pdb.set_trace();  
-    add_iscsi_target_exec["default"]();
-    for i in iscsi_target_options_set.iterkeys():
-        if iscsi_target_options_set[i]['isset'] == True:
-            iscsi_target_exec[i](cmnd_opts, iscsi_target_options_set[i]['value'])
+    try:
+        add_iscsi_target_exec["default"](cmnd_opts);
+        pdb.set_trace();
+        for i in iscsi_target_options_set.iterkeys():
+            pdb.set_trace();
+            if iscsi_target_options_set[i]['isset'] == True:
+                add_iscsi_target_exec[i](cmnd_opts, iscsi_target_options_set[i]['value'])
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
 
 
 def parse_Arguments(parser):
@@ -84,17 +98,43 @@ def setup_SubCommands():
 
     #Add target command
     add_target_parser = subparsers.add_parser('add_target', help='add a target iqn')
-    add_target_parser.add_argument("iqn", help="Unknown pos args sequence", nargs=1)	
-    add_target_parser.add_argument("-M", help="Max Session for this target per Initiator", nargs=1)	
+    add_target_parser.add_argument("target_node", help="target node name", nargs=1)	
+    add_target_parser.add_argument("-a","--TargetAlias",action=CmndAction,help="target node alias", required=False)	
+    add_target_parser.add_argument("-p","--PeerIP", help="peer controller ip", required=False)	
+    add_target_parser.add_argument("-I","--TargetId", help="target id", required=False)
+    add_target_parser.add_argument("-g","--TargetPortGroup", help="target port group number", required=False)	
+    add_target_parser.add_argument("-s","--TargetALUAState", help="target port ALUA state", required=False)	
+    add_target_parser.add_argument("-n","--InitialR2T", help="Allow initialR2T packet", required=False)	
+    add_target_parser.add_argument("-i","--ImmediateData", help="Allow immediate data packet", required=False)	
+    add_target_parser.add_argument("-c","--MaxConnections", help="The maximum number of connections", required=False)	
+    add_target_parser.add_argument("-e","--HeaderDigest", help="header digest type", required=False)	
+    add_target_parser.add_argument("-d","--DataDigest", help="data digest type", required=False)	
+    add_target_parser.add_argument("-r","--MaxRecvDataSegmentLength", help="The maximum amount of data that either the initiator or the target can receive in any iSCSI PDU", required=False)	
+    add_target_parser.add_argument("-x","--MaxXmitDataSegmentLength", help="The maximum amount of data that  the target can transmit in any iSCSI PDU", required=False)	
+    add_target_parser.add_argument("-b","--MaxBurstLength", help="Maximum SCSI data payload in bytes for data-in or for a solicited data-out sequence", required=False)	
+    add_target_parser.add_argument("-f","--FirstBurstLength", help="Maximum SCSI payload, in bytes, of unsolicited data an initiator may send to the target", required=False)	
+    add_target_parser.add_argument("-o","--MaxOutstandingR2T", help="The maximum number of outstanding R2Ts", required=False)	
+    add_target_parser.add_argument("-Q","--QueuedCommands", help="The maximum number of commands queued to any session of this target", required=False)	
+    add_target_parser.add_argument("-R","--RspTimeout", help="The maximum time in seconds a command can wait for response from initiator", required=False)	
+    add_target_parser.add_argument("-N","--NopInInterval", help="Send nop-in command interval", required=False)	
+    add_target_parser.add_argument("-M","--MaxSessions", help="The maximum number of sessions", required=False)
+    add_target_parser.add_argument("-E","--Enable", action=CmndAction, help="Create an enabled target", required=False)
+
 
     #get target command
     get_target_parser = subparsers.add_parser('get_target', help='get a target iqn')
+    get_target_parser.add_argument("-t","--target_node", help="target node name", required=False)
   #  get_target_parser.add_argument("pos_args", help="Unknown pos args sequence", nargs=1)	
 
 
     #delete target command
     delete_target_parser = subparsers.add_parser('del_target', help='delete a target iqn')
-    delete_target_parser.add_argument("iqn", help="Unknown pos args sequence", nargs=1)	
+    delete_target_parser.add_argument("<target_node>", help="target node name", nargs=1)	
+
+    #add initiator command
+    add_acl_initiator_parser = subparsers.add_parser('add_acl_initiator', help='adding initiator to target node')
+    add_acl_initiator_parser.add_argument('initiator_node',help="target node name", nargs=2)	
+
 
     return parser
     print parser.parse_args()
@@ -102,7 +142,7 @@ def setup_SubCommands():
 
 def main():
     print "Starting main"
-#    import pdb; pdb.set_trace();
+    import pdb; pdb.set_trace();
     parser = setup_SubCommands()
     parse_Arguments(parser)
     exec_commands(parser.parse_args())
