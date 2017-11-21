@@ -4,87 +4,611 @@ import argparse
 import subprocess
 import pdb
 #populate this map as key value pairs based on options sent in the user
-iscsi_target_options_set = {}
+options_set = {}
 
 class CmndAction(argparse.Action):
+    #pdb.set_trace();
     def __init__(self, option_strings, dest, nargs=None, **kwargs):
         if nargs is not None:
             raise ValueError("nargs not allowed")
         super(CmndAction, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
-        print '%r %r %r' % (namespace, values, option_string)
         setattr(namespace, self.dest, values)
-        iscsi_target_options_set[option_string] = {}
-        iscsi_target_options_set[option_string]['isset'] = True
-        iscsi_target_options_set[option_string]['value'] = values
+        options_set[option_string] = {}
+        options_set[option_string]['isset'] = True
+        options_set[option_string]['value'] = values
 
-def default_exec(cmnd_opts):
+def add_target_default_exec(cmnd_opts):
     try:
-        pdb.set_trace();
-        print "Doing some commands"
-        print "Executing Arguments"
-
         path="/sys/kernel/scst_tgt/targets/iscsi/mgmt"
-        if(sys.argv[1]=="add_target"):	
-            cmd='echo "'+ 'add_target '+sys.argv[2] +' ">' + path
-            output = subprocess.check_output(cmd, shell=True)
-            print "Added Target successfully ",output
-        elif(sys.argv[1]=="del_target"):
-            cmd='echo "'+ 'del_target '+sys.argv[2] +' ">' + path
-            output = subprocess.check_output(cmd, shell=True)
-            print "Deleted Target successfully",output
-        elif(sys.argv[1]=="add_acl_initiator"):
-#            cmd= 'echo "add '+''.join(map(str,cmd_opts.initiator_node)) +'">'+" /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/ini_groups/priya/initiators"            
-            cmd= 'echo "add '+str(cmnd_opts.initiator_node[1])+' ">'+" /sys/kernel/scst_tgt/targets/iscsi/"+str(cmnd_opts.initiator_node[0])+"/ini_groups/priya/initiators/mgmt"            
-        else:
-            output=subprocess.check_output("scstadmin -list_target", shell=True )		
-            print "listing the existing targets ",output
+        cmd='echo "'+ 'add_target '+''.join(map(str,cmnd_opts.target_node)) +' ">' + path
+        output = subprocess.check_output(cmd, shell=True)
+        print "Added Target successfully ",output
     except subprocess.CalledProcessError:
         print "error Executing the command"
 
-def set_threshold_exec(cmnd_opts, threshold):
+def del_target_default_exec(cmnd_opts):
     try:
-        output = subprocess.check_output(["ls","-l"], shell=True)
-        print output, cmnd_opts
+        path="/sys/kernel/scst_tgt/targets/iscsi/mgmt"
+        cmd='echo "'+ 'del_target '+''.join(map(str,cmnd_opts.target_node)) +' ">' + path
+        output = subprocess.check_output(cmd, shell=True)
+        print "Deleted Target successfully",output
     except subprocess.CalledProcessError:
         print "error Executing the command"
 
-def set_name(cmnd_opts, value):
-    print "please set name"
-    iscsi_target_options_set['--dirname']
+def get_target_default_exec(cmnd_opts):
+    try:
+        path="/sys/kernel/scst_tgt/targets/iscsi/mgmt"
+        output=subprocess.check_output("scstadmin -list_target", shell=True )
+    except subprocess.CalledProcessError:
+        print "error Executing get_target command"
+
+def set_target_default_exec(cmnd_opts):
+    print "Dummy nothing to do"
+
+def add_acl_initiator_default_exec(cmnd_opts):
+    try:
+        cmd= 'echo "add '+str(cmnd_opts.initiator_node[1])+' ">'+" /sys/kernel/scst_tgt/targets/iscsi/"+str(cmnd_opts.initiator_node[0])+"/ini_groups/default/initiators/mgmt"            
+        output = subprocess.check_output(cmd, shell=True)
+        print "Added initiator to target node successfully",output
+    except subprocess.CalledProcessError:
+        print "error Executing the add_acl_initiator command"
+
+def del_acl_initiator_default_exec(cmnd_opts):
+    try:
+        cmd= 'echo "del '+str(cmnd_opts.initiator_node[1])+' ">'+" /sys/kernel/scst_tgt/targets/iscsi/"+str(cmnd_opts.initiator_node[0])+"/ini_groups/default/initiators/mgmt"
+        output = subprocess.check_output(cmd, shell=True)
+        print "Deleting initiator node successfully"
+    except subprocess.CalledProcessError:
+        print "error Executing the del_acl_initiator command"
+
+def get_acl_initiator_default_exec(cmnd_opts):
+    try:
+        output=subprocess.check_output("scstadmin -list_group", shell=True )
+        print output
+    except subprocess.CalledProcessError:
+        print "error Executing the get_acl_initiator command"
+
+def add_allow_portal_default_exec(cmnd_opts):
+    #ToDo need to be done  for the SCST 
+    print "Need To implement"
+
+def del_allow_portal_default_exec(cmnd_opts):
+    #ToDo need to be done  for the SCST 
+    print "Need To implement"
+
+def get_allow_portal_default_exec(cmnd_opts):
+    #ToDo need to be done  for the SCST 
+    print "Need To implement"
+
+
+def add_acl_portal_default_exec(cmnd_opts):
+    try:
+        path="/sys/kernel/scst_tgt/targets/iscsi/mgmt"
+        cmd='echo "'+'add_target_attribute '+str(cmnd_opts.ini_ip[0])+' allowed_portal '+str(cmnd_opts.ini_ip[1]) +' ">'+ path
+        output = subprocess.check_output(cmd, shell=True)
+        print "Added initiator ip to Target successfully",output
+    except subprocess.CalledProcessError:
+        print "error Executing the add_acl_portal command"
+
+def del_acl_portal_default_exec(cmnd_opts):
+    try:
+        path="/sys/kernel/scst_tgt/targets/iscsi/mgmt"
+        cmd='echo "'+'del_target_attribute '+str(cmnd_opts.ini_ip[0])+' allowed_portal '+str(cmnd_opts.ini_ip[1]) +' ">'+ path
+        output = subprocess.check_output(cmd, shell=True)
+        print "Deleted initiator ip successfully",output
+    except subprocess.CalledProcessError:
+        print "error Executing the del_acl_portal command"
+
+def get_acl_portal_default_exec(cmnd_opts):
+    try:
+        output=subprocess.check_output("scstadmin -list_target", shell=True )
+        print output
+    except subprocess.CalledProcessError:
+        print "error Executing the get_acl_portal command"
+
+def enable_target_default_exec(cmnd_opts):
+    try:
+        cmd ="echo "+cmnd_opts.enable +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/enabled ;"
+        cmd +="echo "+cmnd_opts.enable +" > /sys/kernel/scst_tgt/targets/iscsi/enabled"
+        output = subprocess.check_output(cmd, shell=True)
+        print "Enabled target successfully",output
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def session_default_exec(cmnd_opts):
+    try:
+        cmd="scstadmin -list_sessions"
+        output = subprocess.check_output(cmd, shell=True)
+        print "Get session list",output
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+        
+def add_chap_default_exec(cmnd_opts):
+    add_chap_map[cmnd_opts.normal][cmnd_opts.in_or_out](cmnd_opts);
+       
+def del_chap_default_exec(cmnd_opts):
+    #pdb.set_trace();
+    del_chap_map[cmnd_opts.normal][cmnd_opts.in_or_out](cmnd_opts);
+ 
+def add_chap_normal_default_exec(cmnd_opts):
+    add_chap_normal_exec[cmnd_opts.in_or_out](cmnd_opts);
+
+def add_chap_normal_in_exec(cmnd_opts):
+    try:
+        path="/sys/kernel/scst_tgt/targets/iscsi/mgmt"
+        cmd='echo "'+'add_target_attribute '+cmnd_opts.target_node[0]+'  IncomingUser '+ cmnd_opts.chapname + ' ' + cmnd_opts.secret+' ">' + path
+        output = subprocess.check_output(cmd, shell=True)
+        print "Added a normal chap incoming to target successfully ",output
+    except subprocess.CalledProcessError:
+        print "error Executing the 'add_chap normal in' command"
+
+def add_chap_normal_out_exec(cmnd_opts):
+    try:
+        path="/sys/kernel/scst_tgt/targets/iscsi/mgmt"
+        cmd='echo "'+'add_target_attribute '+cmnd_opts.target_node[0]+' OutgoingUser '+ cmnd_opts.chapname + ' ' + cmnd_opts.secret+' ">' + path
+        output = subprocess.check_output(cmd, shell=True)
+        print "Add a normal chap outgoing to target successfully ",output
+    except subprocess.CalledProcessError:
+        print "error Executing the 'add_chap normal in' command"
+
+def del_chap_normal_default_exec(cmnd_opts):
+    del_chap_normal_exec[cmnd_opts.in_or_out](cmnd_opts);
+
+def del_chap_normal_in_exec(cmnd_opts):
+    path="/sys/kernel/scst_tgt/targets/iscsi/mgmt"
+    try:
+        cmd='echo "'+'del_target_attribute '+cmnd_opts.target_node[0]+'  IncomingUser '+ cmnd_opts.chapname +' ">' + path
+        output = subprocess.check_output(cmd, shell=True)
+        print "Deleted a normal chap incoming to target successfully ",output
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def del_chap_normal_out_exec(cmnd_opts):
+    pdb.set_trace();
+    path="/sys/kernel/scst_tgt/targets/iscsi/mgmt"
+    try:
+        cmd='echo "'+'del_target_attribute '+cmnd_opts.target_node[0]+' OutgoingUser '+ cmnd_opts.chapname +' ">' + path
+        output = subprocess.check_output(cmd, shell=True)
+        print "Deleted a normal chap outgoing to target successfully ",output
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+        
+## Chap Discovery
+def add_chap_discovery_default_exec(cmnd_opts):
+    print "dummy nothing to do"
+    add_chap_discovery_exec[cmnd_opts.in_or_out](cmnd_opts);
+
+
+def add_chap_discovery_in_exec(cmnd_opts):
+    try:
+        path="/sys/kernel/scst_tgt/targets/iscsi/mgmt"
+        cmd='echo "'+'add_attribute '+' IncomingUser '+ cmnd_opts.chapname + ' ' + cmnd_opts.secret+' ">' + path
+        output = subprocess.check_output(cmd, shell=True)
+        print "Added a discovery chap incoming to target successfully ",output
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def add_chap_discovery_out_exec(cmnd_opts):
+    try:
+        path="/sys/kernel/scst_tgt/targets/iscsi/mgmt"
+        cmd='echo "'+'add_attribute '+' OutgoingUser '+ cmnd_opts.chapname + ' ' + cmnd_opts.secret+' ">' + path
+        output = subprocess.check_output(cmd, shell=True)
+        print "Add a discovery chap outgoing to target successfully ",output
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def del_chap_discovery_default_exec(cmnd_opts):
+    print "dummy nothing to do"
+    del_chap_discovery_exec[cmnd_opts.in_or_out](cmnd_opts);
+
+def del_chap_discovery_in_exec(cmnd_opts):
+    try:
+        path="/sys/kernel/scst_tgt/targets/iscsi/mgmt"
+        cmd='echo "'+'del_attribute '+' IncomingUser '+ cmnd_opts.chapname +' ">' + path
+        print "Deleted a discovery chap incoming to target successfully "
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def del_chap_discovery_out_exec(cmnd_opts):
+    try:
+        path="/sys/kernel/scst_tgt/targets/iscsi/mgmt"
+        cmd='echo "'+'del_attribute '+' OutgoingUser '+ cmnd_opts.chapname +' ">' + path
+        output = subprocess.check_output(cmd, shell=True)
+        print "Deleted a discovery chap outgoing to target successfully ",output
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def set_session_default_exec(cmnd_opts):
+    print "Need To implement"
+    
+def set_isns_target_default_exec(cmnd_opts):
+    print "Need To implement"
+
+def set_max_sessions_exec(cmnd_opts,value):
+    try:
+        cmd="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/MaxSessions"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
 
 def set_enable_exec(cmnd_opts,value):
-    pdb.set_trace();
     try:
-        cmd="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/enabled"
-        com="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/enabled"
+        cmd ="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/enabled ;"
+        cmd +="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/enabled"
         output = subprocess.check_output(cmd, shell=True)
-        output1 = subprocess.check_output(com, shell=True)
     except subprocess.CalledProcessError:
         print "error Executing the command"
 
+def set_NopInInterval_exec(cmnd_opts,value):
+    try:
+        cmd ="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/NopInInterval"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def set_NopInTimeout_exec(cmnd_opts,value):
+    try:
+        cmd ="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/NopInTimeout"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def set_RspTimeout_exec(cmnd_opts,value):
+    try:
+        cmd ="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/RspTimeout"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def set_QueuedCommands_exec(cmnd_opts,value):
+    try:
+        cmd ="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/QueuedCommands"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+def set_MaxOutstandingR2T_exec(cmnd_opts,value):
+    try:
+        cmd ="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/MaxOutstandingR2T"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+def set_FirstBurstLength_exec(cmnd_opts,value):
+    try:
+        cmd ="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/FirstBurstLength"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+def set_MaxBurstLength_exec(cmnd_opts,value):
+    try:
+        cmd ="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/MaxBurstLength"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+def set_MaxXmitDataSegmentLength_exec(cmnd_opts,value):
+    try:
+        cmd ="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/MaxXmitDataSegmentLength"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+def set_MaxRecvDataSegmentLength_exec(cmnd_opts,value):
+    try:
+        cmd ="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/MaxRecvDataSegmentLength"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+def set_DataDigest_exec(cmnd_opts,value):
+    try:
+        cmd ="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/DataDigest"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+def set_HeaderDigest_exec(cmnd_opts,value):
+    try:
+        cmd ="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/HeaderDigest"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+def set_MaxConnections_exec(cmnd_opts,value):
+    try:
+        cmd ="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/MaxConnections"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+def set_ImmediateData_exec(cmnd_opts,value):
+    try:
+        cmd ="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/ImmediateData"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def set_InitialR2T_exec(cmnd_opts,value):
+    try:
+        cmd ="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/InitialR2T"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def set_TargetALUAState_exec(cmnd_opts,value):
+    try:
+        cmd ="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/TargetALUAState"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def set_TargetPortGroup_exec(cmnd_opts,value):
+    try:
+        cmd ="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/TargetPortGroup"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def set_TargetId_exec(cmnd_opts,value):
+    try:
+        cmd ="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/tid"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def set_PeerIP_exec(cmnd_opts,value):
+    try:
+        cmd ="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/PeerIP"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def set_TargetAlias_exec(cmnd_opts,value):
+    try:
+        cmd ="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/TargetAlias"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def set_TargetAlias_exec(cmnd_opts, value):
+    try:
+#        cmd ="echo "+value +" > /sys/kernel/scst_tgt/targets/iscsi/"+''.join(map(str,cmnd_opts.target_node))+"/TargetAlias"
+        cmd="scstadmin -list_sessions"
+        output = subprocess.check_output(cmd, shell=True)
+        print "Lists the session information",cmd
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+ 
+def get_session_exec(cmnd_opts, value):
+    try:
+        cmd="scstadmin -list_sessions"
+        output = subprocess.check_output(cmd, shell=True)
+        print "Get session list",output
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def set_isns_access_control_exec(cmnd_opts, value):
+    try:
+#Todo need to find out where to add the value in SCST
+        cmd="ls"
+        output = subprocess.check_output(cmd, shell=True)
+        print "Get session list",output
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def set_isns_debug_mode_exec(cmnd_opts, value):
+    try:
+#Todo need to find out where to add the value in SCST
+        cmd="ls"
+        output = subprocess.check_output(cmd, shell=True)
+        print "Get session list",output
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+def set_isns_identity_exec(cmnd_opts, value):
+    try:
+#Todo need to find out where to add the value in SCST
+        cmd="ls"
+        output = subprocess.check_output(cmd, shell=True)
+        print "set isns identity list",output
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def set_force_session_exec(cmnd_opts, value):
+    try:
+        #Todo need to find out where to add the value in SCST
+        cmd="ls"
+        output = subprocess.check_output(cmd, shell=True)
+        print "set force session list",output
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
 
 #set of commands to run for the options set
-add_iscsi_target_exec = {"default"  : default_exec,
-                   "--Enable"      : set_enable_exec,
-                   "-E"      : set_enable_exec,
-                   "--P"      : set_threshold_exec,
-                   "--dirname": set_name
-                   }
+common_ops  =   {
+                     "-a"                       : set_TargetAlias_exec,
+                     "--TargetAlias"            : set_TargetAlias_exec,
+                     "-p"                         : set_PeerIP_exec,
+                     "--PeerIP"                   : set_PeerIP_exec,
+                     "-s"                         : set_TargetALUAState_exec,
+                     "--TargetALUAState"          : set_TargetALUAState_exec,
+                     "-n"                         : set_InitialR2T_exec,
+                     "--InitialR2T"               : set_InitialR2T_exec,
+                     "-i"                         : set_ImmediateData_exec,
+                     "--ImmediateData"            : set_ImmediateData_exec,
+                     "-c"                         : set_MaxConnections_exec,
+                     "--MaxConnections"           : set_MaxConnections_exec,
+                     "-e"                         : set_HeaderDigest_exec,
+                     "--HeaderDigest"             : set_HeaderDigest_exec,
+                     "-d"                         : set_DataDigest_exec,
+                     "--DataDigest"               : set_DataDigest_exec,
+                     "-r"                         : set_MaxRecvDataSegmentLength_exec,
+                     "--MaxRecvDataSegmentLength" : set_MaxRecvDataSegmentLength_exec,
+                     "-x"                         : set_MaxXmitDataSegmentLength_exec,
+                     "--MaxXmitDataSegmentLength" : set_MaxXmitDataSegmentLength_exec,
+                     "-b"                         : set_MaxBurstLength_exec,
+                     "--MaxBurstLength"           : set_MaxBurstLength_exec,
+                     "-f"                         : set_FirstBurstLength_exec,
+                     "--FirstBurstLength"         : set_FirstBurstLength_exec,
+                     "-o"                         : set_MaxOutstandingR2T_exec,
+                     "--MaxOutstandingR2T"        : set_MaxOutstandingR2T_exec,
+                     "-Q"                         : set_QueuedCommands_exec,
+                     "--QueuedCommands"           : set_QueuedCommands_exec,
+                     "-R"                         : set_RspTimeout_exec,
+                     "--RspTimeout"               : set_RspTimeout_exec,
+                     "-T"                         : set_NopInTimeout_exec,
+                     "--NopInTimeout"             : set_NopInTimeout_exec,
+                     "-N"                         : set_NopInInterval_exec,
+                     "--NopInInterval"            : set_NopInInterval_exec,
+                     "-M"                         : set_max_sessions_exec,
+                     "--MaxSessions"              : set_max_sessions_exec,
+                     "-E"                         : set_enable_exec,
+                     "--Enable"                   : set_enable_exec
+            }
+
+add_target_exec = {
+                   "default"                    : add_target_default_exec,
+                   "-g"                         : set_TargetPortGroup_exec,
+                   "--TargetPortGroup"          : set_TargetPortGroup_exec,
+                   "-I"                         : set_TargetId_exec,
+                   "--TargetId"                 : set_TargetId_exec,
+                   }    
+
+del_target_exec =   {
+                    "default"                   : del_target_default_exec
+                    }
+
+get_target_exec =   {
+                    "default"                   : get_target_default_exec
+                    }
+
+set_target_exec =   {
+                     "default"                  : set_target_default_exec,
+                    }
+
+add_acl_initiator_exec = {
+                     "default"                  :  add_acl_initiator_default_exec
+                          } 
+
+del_acl_initiator_exec = { 
+                     "default"                  :  del_acl_initiator_default_exec
+                          }
+
+get_acl_initiator_exec = { 
+                                 "default"                  :  get_acl_initiator_default_exec
+                          }
+     
+ 
+add_allow_portal_exec =  {
+                            "default"                    :  add_allow_portal_default_exec 
+                         }
+
+del_allow_portal_exec =  {
+                            "default"                    :  del_allow_portal_default_exec 
+                         }
+
+get_allow_portal_exec =  {
+                            "default"                    :  get_allow_portal_default_exec 
+                         }
+
+add_acl_portal_exec = { 
+                         "default"                       :  add_acl_portal_default_exec 
+                      }
+
+del_acl_portal_exec = { 
+                         "default"                       :  del_acl_portal_default_exec
+                      }
+
+get_acl_portal_exec = { 
+                         "default"                       :  get_acl_portal_default_exec
+                      }
+
+get_session_exec = {
+                                "default"                :  session_default_exec,
+                                "-s"                     :  get_session_exec,
+                                "--sid"                  :  get_session_exec
+                            }
+
+set_session_exec = { 
+                            "default"                    :  set_session_default_exec,
+                            "-f"                         :  set_force_session_exec,
+                            "--force_close"              :  set_force_session_exec
+                          }    
+
+enable_target_exec = { 
+                        "default"                        :  enable_target_default_exec                                
+                     }
+
+add_chap_normal_exec =   { 
+                            "default"                    :  add_chap_normal_default_exec,
+                            "in"                         :  add_chap_normal_in_exec,
+                            "out"                        :  add_chap_normal_out_exec
+                         }
+
+del_chap_normal_exec =   {
+                            "default"                    :  del_chap_normal_default_exec,
+                            "in"                         :  del_chap_normal_in_exec,
+                            "out"                        :  del_chap_normal_out_exec
+                         }
+
+
+add_chap_discovery_exec = {
+                             "default"                   :  add_chap_discovery_default_exec,
+                             "in"                        :  add_chap_discovery_in_exec,
+                             "out"                       :  add_chap_discovery_out_exec
+                          }
+
+del_chap_discovery_exec =   {
+                            "default"                    :  del_chap_discovery_default_exec,
+                            "in"                         :  del_chap_discovery_in_exec,
+                            "out"                        :  del_chap_discovery_out_exec
+                         }
+
+
+set_isns_target_exec =  { 
+                            "default"                    :  set_isns_target_default_exec,
+                            "-a"                         :  set_isns_access_control_exec,
+                            "--accesscontrol"            :  set_isns_access_control_exec,
+                            "-d"                         :  set_isns_debug_mode_exec,
+                            "--debugmode"                :  set_isns_debug_mode_exec,
+                            "-i"                         :  set_isns_identity_exec,
+                            "--identity"                 :  set_isns_identity_exec                    
+                        }
+
+add_chap_map = {
+                "default"           : add_chap_default_exec,
+                "normal"            : add_chap_normal_exec,
+                "discovery"         : add_chap_discovery_exec
+           }
+
+del_chap_map = {
+                "default"           : del_chap_default_exec,
+                "normal"            : del_chap_normal_exec,
+                "discovery"         : del_chap_discovery_exec
+               }
+
+global_cmnd_map = { 
+                    "add_target"            : add_target_exec,
+                    "del_target"            : del_target_default_exec,
+                    "get_target"            : get_target_default_exec,
+                    "set_target"            : set_target_exec,
+                    "add_acl_initiator"     : add_acl_initiator_default_exec,
+                    "del_acl_initiator"     : del_acl_initiator_default_exec,
+                    "get_acl_initiator"     : get_acl_initiator_default_exec, 
+                    "add_allow_portal"      : add_allow_portal_exec,
+                    "del_allow_portal"      : del_allow_portal_exec,
+                    "get_allow_portal"      : get_allow_portal_exec,
+                    "add_acl_portal"        : add_acl_portal_default_exec,
+                    "del_acl_portal"        : del_acl_portal_default_exec,
+                    "get_acl_portal"        : get_acl_portal_default_exec,
+                    "enable_target"         : enable_target_exec,
+                    "get_session"           : get_session_exec, 
+                    "set_session"           : set_session_exec,
+                    "add_chap"              : add_chap_map,
+                    "del_chap"              : del_chap_map,
+                    "set_isns"              : set_isns_target_exec,
+                    "enable_target"         : enable_target_exec
+                }
+
 def exec_commands(cmnd_opts):
 #execute commands
-#    subprocess.check_output(cmd, shell=True)
-    try:
-        add_iscsi_target_exec["default"](cmnd_opts);
-        pdb.set_trace();
-        for i in iscsi_target_options_set.iterkeys():
-            pdb.set_trace();
-            if iscsi_target_options_set[i]['isset'] == True:
-                add_iscsi_target_exec[i](cmnd_opts, iscsi_target_options_set[i]['value'])
-    except subprocess.CalledProcessError:
-        print "error Executing the command"
-
+    global_cmnd_map[sys.argv[1]]["default"](cmnd_opts);
+    for i in options_set.iterkeys():
+        if options_set[i]['isset'] == True:
+            global_cmnd_map[sys.argv[1]][i](cmnd_opts, options_set[i]['value'])
 
 def parse_Arguments(parser):
     #parse arguments
@@ -99,43 +623,147 @@ def setup_SubCommands():
 
     #Add target command
     add_target_parser = subparsers.add_parser('add_target', help='add a target iqn')
-    add_target_parser.add_argument("target_node", help="target node name", nargs=1)	
+    add_target_parser.add_argument("target_node",help="target node name", nargs=1)	
     add_target_parser.add_argument("-a","--TargetAlias",action=CmndAction,help="target node alias", required=False)	
-    add_target_parser.add_argument("-p","--PeerIP", help="peer controller ip", required=False)	
-    add_target_parser.add_argument("-I","--TargetId", help="target id", required=False)
-    add_target_parser.add_argument("-g","--TargetPortGroup", help="target port group number", required=False)	
-    add_target_parser.add_argument("-s","--TargetALUAState", help="target port ALUA state", required=False)	
-    add_target_parser.add_argument("-n","--InitialR2T", help="Allow initialR2T packet", required=False)	
-    add_target_parser.add_argument("-i","--ImmediateData", help="Allow immediate data packet", required=False)	
-    add_target_parser.add_argument("-c","--MaxConnections", help="The maximum number of connections", required=False)	
-    add_target_parser.add_argument("-e","--HeaderDigest", help="header digest type", required=False)	
-    add_target_parser.add_argument("-d","--DataDigest", help="data digest type", required=False)	
-    add_target_parser.add_argument("-r","--MaxRecvDataSegmentLength", help="The maximum amount of data that either the initiator or the target can receive in any iSCSI PDU", required=False)	
-    add_target_parser.add_argument("-x","--MaxXmitDataSegmentLength", help="The maximum amount of data that  the target can transmit in any iSCSI PDU", required=False)	
-    add_target_parser.add_argument("-b","--MaxBurstLength", help="Maximum SCSI data payload in bytes for data-in or for a solicited data-out sequence", required=False)	
-    add_target_parser.add_argument("-f","--FirstBurstLength", help="Maximum SCSI payload, in bytes, of unsolicited data an initiator may send to the target", required=False)	
-    add_target_parser.add_argument("-o","--MaxOutstandingR2T", help="The maximum number of outstanding R2Ts", required=False)	
-    add_target_parser.add_argument("-Q","--QueuedCommands", help="The maximum number of commands queued to any session of this target", required=False)	
-    add_target_parser.add_argument("-R","--RspTimeout", help="The maximum time in seconds a command can wait for response from initiator", required=False)	
-    add_target_parser.add_argument("-N","--NopInInterval", help="Send nop-in command interval", required=False)	
-    add_target_parser.add_argument("-M","--MaxSessions", help="The maximum number of sessions", required=False)
+    add_target_parser.add_argument("-p","--PeerIP",action=CmndAction, help="peer controller ip", required=False)	
+    add_target_parser.add_argument("-I","--TargetId", action=CmndAction,help="target id", required=False)
+    add_target_parser.add_argument("-g","--TargetPortGroup", action=CmndAction,help="target port group number", required=False)	
+    add_target_parser.add_argument("-s","--TargetALUAState", action=CmndAction,help="target port ALUA state", required=False)	
+    add_target_parser.add_argument("-n","--InitialR2T", action=CmndAction,help="Allow initialR2T packet", required=False)	
+    add_target_parser.add_argument("-i","--ImmediateData", action=CmndAction,help="Allow immediate data packet", required=False)	
+    add_target_parser.add_argument("-c","--MaxConnections", action=CmndAction,help="The maximum number of connections", required=False)	
+    add_target_parser.add_argument("-e","--HeaderDigest", action=CmndAction,help="header digest type", required=False)	
+    add_target_parser.add_argument("-d","--DataDigest", action=CmndAction,help="data digest type", required=False)	
+    add_target_parser.add_argument("-r","--MaxRecvDataSegmentLength",action=CmndAction, help="The maximum amount of data that either the initiator or the target can receive in any iSCSI PDU", required=False)	
+    add_target_parser.add_argument("-x","--MaxXmitDataSegmentLength", action=CmndAction,help="The maximum amount of data that  the target can transmit in any iSCSI PDU", required=False)	
+    add_target_parser.add_argument("-b","--MaxBurstLength", action=CmndAction,help="Maximum SCSI data payload in bytes for data-in or for a solicited data-out sequence", required=False)	
+    add_target_parser.add_argument("-f","--FirstBurstLength", action=CmndAction,help="Maximum SCSI payload, in bytes, of unsolicited data an initiator may send to the target", required=False)	
+    add_target_parser.add_argument("-o","--MaxOutstandingR2T", action=CmndAction,help="The maximum number of outstanding R2Ts", required=False)	
+    add_target_parser.add_argument("-Q","--QueuedCommands", action=CmndAction,help="The maximum number of commands queued to any session of this target", required=False)	
+    add_target_parser.add_argument("-R","--RspTimeout", action=CmndAction, help="The maximum time in seconds a command can wait for response from initiator", required=False)	
+    add_target_parser.add_argument("-N","--NopInInterval", action=CmndAction, help="Send nop-in command interval", required=False)	
+    add_target_parser.add_argument("-T","--NopInTimeout", action=CmndAction, help="Nop-in command timeout", required=False)	
+    add_target_parser.add_argument("-M","--MaxSessions", action=CmndAction, help="The maximum number of sessions", required=False)
     add_target_parser.add_argument("-E","--Enable", action=CmndAction, help="Create an enabled target", required=False)
 
 
     #get target command
     get_target_parser = subparsers.add_parser('get_target', help='get a target iqn')
     get_target_parser.add_argument("-t","--target_node", help="target node name", required=False)
-  #  get_target_parser.add_argument("pos_args", help="Unknown pos args sequence", nargs=1)	
 
+    #set target command
+    set_target_parser = subparsers.add_parser('set_target', help='add a target iqn')
+    set_target_parser.add_argument("target_node", help="target node name", nargs=1)	
+    set_target_parser.add_argument("-a","--TargetAlias",action=CmndAction,help="target node alias", required=False)	
+    set_target_parser.add_argument("-p","--PeerIP", action=CmndAction,help="peer controller ip", required=False)	
+    set_target_parser.add_argument("-s","--TargetALUAState", action=CmndAction,help="target port ALUA state", required=False)	
+    set_target_parser.add_argument("-n","--InitialR2T", action=CmndAction,help="Allow initialR2T packet", required=False)	
+    set_target_parser.add_argument("-i","--ImmediateData", action=CmndAction,help="Allow immediate data packet", required=False)	
+    set_target_parser.add_argument("-c","--MaxConnections", action=CmndAction,help="The maximum number of connections", required=False)	
+    set_target_parser.add_argument("-e","--HeaderDigest", action=CmndAction,help="header digest type", required=False)	
+    set_target_parser.add_argument("-d","--DataDigest", action=CmndAction,help="data digest type", required=False)	
+    set_target_parser.add_argument("-r","--MaxRecvDataSegmentLength", action=CmndAction,help="The maximum amount of data that either the initiator or the target can receive in any iSCSI PDU", required=False)	
+    set_target_parser.add_argument("-x","--MaxXmitDataSegmentLength", action=CmndAction,help="The maximum amount of data that  the target can transmit in any iSCSI PDU", required=False)	
+    set_target_parser.add_argument("-b","--MaxBurstLength", action=CmndAction,help="Maximum SCSI data payload in bytes for data-in or for a solicited data-out sequence", required=False)	
+    set_target_parser.add_argument("-f","--FirstBurstLength", action=CmndAction,help="Maximum SCSI payload, in bytes, of unsolicited data an initiator may send to the target", required=False)	
+    set_target_parser.add_argument("-o","--MaxOutstandingR2T",action=CmndAction, help="The maximum number of outstanding R2Ts", required=False)	
+    set_target_parser.add_argument("-Q","--QueuedCommands", action=CmndAction,help="The maximum number of commands queued to any session of this target", required=False)	
+    set_target_parser.add_argument("-R","--RspTimeout", action=CmndAction, help="The maximum time in seconds a command can wait for response from initiator", required=False)	
+    set_target_parser.add_argument("-N","--NopInInterval", action=CmndAction, help="Send nop-in command interval", required=False)	
+    set_target_parser.add_argument("-T","--NopInTimeout", action=CmndAction, help="Nop-in command timeout", required=False)	
+    set_target_parser.add_argument("-M","--MaxSessions", action=CmndAction, help="The maximum number of sessions", required=False)
 
     #delete target command
     delete_target_parser = subparsers.add_parser('del_target', help='delete a target iqn')
-    delete_target_parser.add_argument("<target_node>", help="target node name", nargs=1)	
+    delete_target_parser.add_argument("target_node", help="target node name", nargs=1)	
 
     #add initiator command
     add_acl_initiator_parser = subparsers.add_parser('add_acl_initiator', help='adding initiator to target node')
     add_acl_initiator_parser.add_argument('initiator_node',help="target node name", nargs=2)	
 
+    #delete initiator command
+    del_acl_initiator_parser = subparsers.add_parser('del_acl_initiator', help='delete initiator from target node')
+    del_acl_initiator_parser.add_argument('initiator_node',help="target node name", nargs=2)	
+
+    #get initiator command
+    get_acl_initiator_parser = subparsers.add_parser('get_acl_initiator', help='Listing the initiator')
+    get_acl_initiator_parser.add_argument('initiator_node',help="target node name", nargs=1)	
+
+    #Enable target command
+    enable_target_parser = subparsers.add_parser('enable_target', help='Enable the target')
+    enable_target_parser.add_argument('target_node',help="target node name", nargs=1)
+    enable_target_parser.add_argument('enable',help="target node name", nargs=1)
+    	
+
+    #Add acl_portal command
+    add_acl_portal_parser = subparsers.add_parser('add_acl_portal', help='Adding the initiator ip to target node')
+    add_acl_portal_parser.add_argument('ini_ip',help="target node name", nargs=2)	
+
+    #del_acl_portal command
+    del_acl_portal_parser = subparsers.add_parser('del_acl_portal', help='Delete initiator ip from target node')
+    del_acl_portal_parser.add_argument('ini_ip',help="target node name", nargs=2)	
+
+ #   Add add_chap command for discovery
+    add_chap_parser = subparsers.add_parser('add_chap', help='add chap')
+    add_chap_sub = add_chap_parser.add_subparsers(dest = 'normal')
+    add_chap_normal_parser = add_chap_sub.add_parser('normal')
+    add_chap_discovery_parser = add_chap_sub.add_parser('discovery') 
+
+    add_chap_normal_sub = add_chap_normal_parser.add_subparsers(dest = 'in_or_out')
+    add_chap_normal_in = add_chap_normal_sub.add_parser('in')
+    add_chap_normal_out = add_chap_normal_sub.add_parser('out')
+    for io in {add_chap_normal_in, add_chap_normal_out} :
+        io.add_argument('target_node', help="target node",nargs=1)
+        io.add_argument('-n','--chapname', help="chap name", required=True)
+        io.add_argument('-s','--secret', help="chap password", required=True)
+
+    # add_chap Discovery
+    add_chap_discovery_sub = add_chap_discovery_parser.add_subparsers(dest = 'in_or_out')
+    add_chap_discovery_in = add_chap_discovery_sub.add_parser('in')
+    add_chap_discovery_out = add_chap_discovery_sub.add_parser('out')
+    for io in {add_chap_discovery_in, add_chap_discovery_out}:
+        io.add_argument('-n','--chapname',help="chap name", required=True)
+        io.add_argument('-s','--secret',help="chap password", required=True)
+   
+    #Delete chap command
+    del_chap_parser = subparsers.add_parser('del_chap', help='delete chap')
+    del_chap_sub = del_chap_parser.add_subparsers(dest = 'normal')
+    del_chap_normal_parser = del_chap_sub.add_parser('normal')
+    del_chap_discovery_parser = del_chap_sub.add_parser('discovery')
+    
+    del_chap_normal_sub = del_chap_normal_parser.add_subparsers(dest = 'in_or_out')
+    del_chap_normal_in = del_chap_normal_sub.add_parser('in')
+    del_chap_normal_out = del_chap_normal_sub.add_parser('out')
+    for io in { del_chap_normal_in, del_chap_normal_out }:
+        io.add_argument('target_node', help="target node",nargs=1)
+        io.add_argument('-n','--chapname',help="chap name", required=True)
+
+    del_chap_discovery_sub = del_chap_discovery_parser.add_subparsers(dest = 'in_or_out')
+    del_chap_discovery_in = del_chap_discovery_sub.add_parser('in')
+    del_chap_discovery_out = del_chap_discovery_sub.add_parser('out')
+    for io in { del_chap_discovery_in, del_chap_discovery_out }:
+        io.add_argument('-n','--chapname',help="chap name", required=True)
+ 
+    #set_isns command
+    set_isns_parser = subparsers.add_parser('set_isns', help='')
+    set_isns_parser.add_argument('-e','--enable',help="enable flag")
+    set_isns_parser.add_argument('-s','--isns server ip',help="iSNS server ip")
+    set_isns_parser.add_argument('-l','--local ip',help=" local ip to connect to iSNS server")
+    set_isns_parser.add_argument('-a','--access control',action=CmndAction,
+            help="enable flag to not allow all initiator to log in",required=False)
+    set_isns_parser.add_argument('-d','--debug mode',action=CmndAction,help="enable flag to print portal record",required=False)
+    set_isns_parser.add_argument('-i','--identity',action=CmndAction,help="identity to differentiate machine",required=False)
+    
+    #get_session command
+    get_session_parser = subparsers.add_parser('get_session', help='Lists the session')
+    get_session_parser.add_argument('sess_id',help="session id")	
+    get_session_parser.add_argument('-s','--sid ',action=CmndAction,help="Gets the session information", required=False)	
+   
+
+    #set_session command
+    set_session_parser = subparsers.add_parser('set_session', help='Lists the session')
+    set_session_parser.add_argument('sid',help="session id", nargs=1)	
+    set_session_parser.add_argument('-f','--force_close',action=CmndAction,help="force sessions to close", required=False)	
 
     return parser
     print parser.parse_args()
@@ -143,7 +771,10 @@ def setup_SubCommands():
 
 def main():
     print "Starting main"
-    import pdb; pdb.set_trace();
+    #pdb.set_trace();
+    add_target_exec.update(common_ops)
+    set_target_exec.update(common_ops)
+
     parser = setup_SubCommands()
     parse_Arguments(parser)
     exec_commands(parser.parse_args())

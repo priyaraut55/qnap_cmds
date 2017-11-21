@@ -5,7 +5,7 @@ import subprocess
 import pdb
 
 #populate this map as key value pairs based on options sent in the user
-add_device_options_set = {}
+options_set = {}
 
 class CmndAction(argparse.Action):
     def __init__(self, option_strings, dest, nargs=None, **kwargs):
@@ -14,47 +14,41 @@ class CmndAction(argparse.Action):
         super(CmndAction, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
-        print '%r %r %r' % (namespace, values, option_string)
         setattr(namespace, self.dest, values)
-        add_device_options_set[option_string] = {}
-        add_device_options_set[option_string]['isset'] = True
-        add_device_options_set[option_string]['value'] = values
+        options_set[option_string] = {}
+        options_set[option_string]['isset'] = True
+        options_set[option_string]['value'] = values
 
 def add_default_exec(cmnd_opts):
     try:
-        print "Enter into add_device"
-        #pdb.set_trace();
         path = '/sys/kernel/scst_tgt/handlers/' +cmnd_opts.handler+ '/mgmt'
-        cmd='echo "'+ 'add_device ' +cmnd_opts.n+ ' filename=' +cmnd_opts.f+  ' ">' + path  
-        print "=====Doing add_device====="
+        if cmnd_opts.handler == "vdisk_blockio":
+            cmd='echo "'+ 'add_device ' +cmnd_opts.n+ ' filename=' +cmnd_opts.filename+  ' ">' + path  
+        else:
+            cmd='echo "'+ 'add_device ' +cmnd_opts.n+ ' ">' + path     #For vdisk_nullio
         subprocess.check_output(cmd, shell=True )
-        print "=====leaving add_device====="
+        set_t10_vend_id('QNAP', cmnd_opts.n);
+        set_prod_id('iSCSI Storage', cmnd_opts.n);
+        set_expl_alua(1, cmnd_opts.n);
+        print "Add device success"
 
     except subprocess.CalledProcessError:
         print "error Executing the add_device command"
 
 def delete_default_exec(cmnd_opts):
     try:
-        print "Enter into del_device"
-        path = '/sys/kernel/scst_tgt/handlers/' +cmnd_opts.handler+ '/mgmt'
+        path = '/sys/kernel/scst_tgt/handlers/' + cmnd_opts.handler + '/mgmt'
         cmd='echo "del_device '  +cmnd_opts.n+ ' ">' + path  
-        print "=====Doing delete device====="
         subprocess.check_output(cmd, shell=True )
-        print "=====leaving del_device====="
-        #com = 'del_device '  +cmnd_opts.n+ ' ">'
-        #cmd = 'echo "' + com +path
-        #pdb.set_trace();
-
+        print "Delete device success"
     except subprocess.CalledProcessError:
         print "error Executing the del_device command"
 
 def list_default_exec(cmnd_opts):
     try:
-        print "Enter into list_device"
-        print "=====Doing list_device===="
+        print "list of devices"
         output = subprocess.check_output("scstadmin -list_device", shell=True )
         print output
-        print "=====leaving list_device====="
     except subprocess.CalledProcessError:
         print "error Executing the list_device command"
 
@@ -62,42 +56,34 @@ def set_default_exec(cmnd_opts):
     print "dummy nothing to do"
 
 
-def set_thread_exec(cmnd_opts):
+def set_thread_exec(cmnd_opts,thr_num):
     try:
-        print "Enter into set_device_attr"
         path = '/sys/kernel/scst_tgt/devices/' +cmnd_opts.n
-
-        if cmnd_opts.t is not None:
-            cmd = 'echo' + cmnd_opts.t + ' >' +path+ '/threads_num'
-            subprocess.check_output(cmd, shell=True )
-        #pdb.set_trace();
-        print "=====Doing delete device====="
+        cmd = 'echo' + thr_num + ' >' +path+ '/threads_num'
         subprocess.check_output(cmd, shell=True )
-        print "=====leaving del_device====="
     except subprocess.CalledProcessError:
-        print "error Executing the del_device command"
+        print "error Executing the set_thread_attr command"
+
+def set_thread_pool_exec(cmnd_opts,pool):
+    try:
+        path = '/sys/kernel/scst_tgt/devices/' +cmnd_opts.n
+        cmd = 'echo' + pool + ' >' +path+ '/threads_pool_type'
+        subprocess.check_output(cmd, shell=True )
+    except subprocess.CalledProcessError:
+        print "error Executing the set_thread_attr command"
 
 def set_usn_exec(cmnd_opts,usn):
     try:
-        print "Enter into set_device_attr"
         path = '/sys/kernel/scst_tgt/devices/' +cmnd_opts.n
         cmd = 'echo ' + usn + ' >' +path+ '/usn'
         subprocess.check_output(cmd, shell=True )
-
-       # if cmnd_opts.u is not None:
-       #     cmd = 'echo ' + usn + ' >' +path+ '/usn'
-       #     subprocess.check_output(cmd, shell=True )
-
-        print "=====leaving set_usn_device====="
-
     except subprocess.CalledProcessError:
         print "error Executing the del_device command"
 
 def set_threshold_exec(cmnd_opts):
     try:
-        cmd = "echo " + threshold + "> /sys/kernel/scsi_tgt/devices/"+ cmnd_opts.device_name + "/threshold"
+        cmd = "echo " + threshold + "> /sys/kernel/scst_tgt/devices/"+ cmnd_opts.device_name + "/threshold"
         output = subprocess.check_output(cmd, shell=True)
-        print output, cmnd_opts
     except subprocess.CalledProcessError:
         print "error Executing the command"
 
@@ -105,7 +91,6 @@ def set_thin_provisioned_exec(cmnd_opts, thinprov):
     try:
         cmd='echo '+ thinprov + ' >/sys/kernel/scst_tgt/devices/' +cmnd_opts.n+ '/thin_provisioned'
         subprocess.check_output(cmd, shell=True )
-        #cmd = "echo " + thinprov + " >/sys/kernel/scst_tgt/devices/"+ cmnd_opts.n + "/thin_provisioned"
     except subprocess.CalledProcessError:
         print "error Executing the command"
 
@@ -130,6 +115,28 @@ def set_write_through_exec(cmnd_opts, wr):
     except subprocess.CalledProcessError:
         print "error Executing the command"
 
+def set_t10_vend_id(vendor_id, device):
+    try:
+        cmd = "echo " +vendor_id+ ">/sys/kernel/scst_tgt/devices/" + device + "/t10_vend_id" 
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def set_prod_id(prod_id, device):
+    try:
+        cmd = "echo " +prod_id+ ">/sys/kernel/scst_tgt/devices/" + device + "/prod_id"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def set_expl_alua(expl_alua, device):
+    try:
+        cmd =  "echo %d" %(expl_alua)
+        cmd += " > /sys/kernel/scst_tgt/devices/" + device + "/expl_alua"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+    
 def set_nv_cache_exec(cmnd_opts, nv):
     try:
         cmd = "echo " + nv + " >/sys/kernel/scst_tgt/devices/"+ cmnd_opts.n + "/nv_cache"
@@ -147,19 +154,35 @@ def set_t10_dev_id_exec(cmnd_opts, dev_id):
 
 def set_detach_exec(cmnd_opts, threshold):
     try:
-	cmd = "echo " + threshold + "> /sys/kernel/scsi_tgt/devices/"+ cmnd_opts.device_name + "/detach"
-        output = subprocess.check_output([cmd,"-l"], shell=True)
-        print output, cmnd_opts
+        cmd = "echo " + threshold + "> /sys/kernel/scsi_tgt/devices/"+ cmnd_opts.device_name + "/detach"
+        output = subprocess.check_output(cmd, shell=True)
     except subprocess.CalledProcessError:
         print "error Executing the command"
 
+def get_default_exec(cmnd_opts):
+    try:
+        print "List Device Attributes"
+        cmd = "scstadmin -list_dev_attr " +cmnd_opts.n
+        output = subprocess.check_output(cmd, shell=True)
+        print output
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
 
-def set_name(cmnd_opts, value):
-    print "please set name"
-    add_device_options_set['--dirname']
+def get_naa_exec(cmnd_opts):
+    try:
+        cmd = "cat /sys/kernel/scst_tgt/devices/" +cmnd_opts.n+ "/naa_id"
+        output = subprocess.check_output(cmd, shell=True)
+        print "NAA =  " +output
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def get_dev_iostat_exec(cmnd_opts):
+    print "Need to implement"
+
 #set of commands to run for the options set
 
-add_device_exec = {"default"                : add_default_exec,
+add_device_exec = {
+                   "default"                : add_default_exec,
                    "-p"                     : set_threshold_exec,
                    "--detach"               : set_detach_exec,
                    "-P"                     : set_thin_provisioned_exec,
@@ -179,63 +202,84 @@ add_device_exec = {"default"                : add_default_exec,
 
                    }
 
-delete_device_exec = {"default"  : delete_default_exec,
-                   "-p"      : set_threshold_exec,
-                   "--detach" : set_detach_exec,
-                   "-P"      : set_thin_provisioned_exec,
+delete_device_exec = {
+                    "default"             : delete_default_exec,
+                     }
+
+list_device_exec = {
+                    "default"               : list_default_exec
                    }
 
-list_device_exec = {"default"  : list_default_exec
+set_device_exec = {
+                    "default"                : set_default_exec,
+                    "-u"                    : set_usn_exec,
+                    "--usn"                 : set_usn_exec,
+                    "-i"                    : set_t10_dev_id_exec,
+                   "--t10_dev_id"           : set_t10_dev_id_exec,
+                    "-p"                    : set_threshold_exec,
+                    "--threshold_percentage": set_threshold_exec,
+                    "-t"                    : set_thread_exec,
+                    "--thread_num"          : set_thread_exec,
+                    "-l"                    : set_thread_pool_exec,
+                    "--thread_pool_type"    : set_thread_pool_exec,        
+                    "-P"                    : set_thin_provisioned_exec,
+                   "--thin_provisioned"     : set_thin_provisioned_exec,
+
                     }
 
-set_device_exec = {"default"    : set_default_exec,
-                    "--usn"     : set_usn_exec,
-                    "-u"        : set_usn_exec,
-                    "--usn"        : set_usn_exec,
-                    "--threads" : set_thread_exec,
-                    "-t"        : set_thread_exec,
-                    }
+get_device_exec = {
+                    "default"                : get_default_exec
+                  }
+
+get_naa_device_exec = {
+                         "default"            : get_naa_exec
+                      }
+
+get_dev_iostat_exec = {
+                        "default"            : get_dev_iostat_exec
+                      }
+
+global_cmnd_map = {
+
+                    "add_device"    : add_device_exec,
+                    "set_dev_attr"  : set_device_exec,
+                    "del_device"    : delete_device_exec,
+                    "list_device"   : list_device_exec,
+                    "get_dev_attr"  : get_device_exec,
+                    "get_naa"       : get_naa_device_exec,
+                    "get_dev_iostat": get_dev_iostat_exec
+                }
 
 
-def exec_commands(cmnd_opts):
+def exec_commands(parser, cmnd_opts):
     #execute commands
-   # import pdb;pdb.set_trace();	
-    print "Executing Arguments"
-    if sys.argv[1] == "add_device":
-        add_device_exec["default"](cmnd_opts);
-        pdb.set_trace();
-        for i in add_device_options_set.iterkeys():
-            if add_device_options_set[i]['isset'] == True:
-                add_device_exec[i](cmnd_opts, add_device_options_set[i]['value'])
-    if sys.argv[1] == "del_device":
-        delete_device_exec["default"](cmnd_opts);
-    if sys.argv[1] == "list_device":
-        list_device_exec["default"](cmnd_opts);
-    if sys.argv[1] == "set_dev_attr":
-        #pdb.set_trace();
-        for i in add_device_options_set.iterkeys():
-            if add_device_options_set[i]['isset'] == True:
-                set_device_exec[i](cmnd_opts, add_device_options_set[i]['value'])
+
+    #If we can select the ops based on cmnd_opts
+    global_cmnd_map[sys.argv[1]]["default"](cmnd_opts);
+    for i in options_set.iterkeys():
+        if options_set[i]['isset'] == True:
+            global_cmnd_map[sys.argv[1]][i](cmnd_opts, options_set[i]['value'])
 
 
 def parse_Arguments(parser):
     #parse arguments
-    print "Parsing Arguments"
-    arg1 = parser.parse_args()
+    #Hack need to find a better way dealing with conflicting options specially -h
+    if sys.argv.__contains__("-h"):
+        indx = sys.argv.index("-h")
+        sys.argv[indx] = "-z"
+    parser.parse_args()
 
 def setup_SubCommands():
     #need to setup subCommands
-    #parser = argparse.ArgumentParser(add_help=False, conflict_handler='resolve')
     parser = argparse.ArgumentParser()
 
     subparsers = parser.add_subparsers(help='commands')
 
     # A add device command
     addDevice_parser = subparsers.add_parser('add_device', help='Add a new device')
-    #pdb.set_trace();	
     addDevice_parser.add_argument('-n', action='store', help='Device name', required=True)
-    addDevice_parser.add_argument('-handler', action='store', help='handler', required=True)
-    addDevice_parser.add_argument('-f', action='store', help='File name', required=True)
+    addDevice_parser.add_argument('-z','--handler', action='store', help='handler', required=True)
+    addDevice_parser.add_argument('-f', "--filename", action='store', help='File name', required=False)
     addDevice_parser.add_argument('-u', "--usn", action=CmndAction, help='usn ', required=False)
     addDevice_parser.add_argument('-p', "--threshold_percentage", action=CmndAction, help='threshold_percentage', required=False)
     addDevice_parser.add_argument('-P', "--thin_provisioned", action=CmndAction, help='thin_provisioned', required=False)
@@ -249,49 +293,47 @@ def setup_SubCommands():
     # A delete device command
     deleteDevice_parser = subparsers.add_parser('del_device', help='Delete a device belonging to handler')
     deleteDevice_parser.add_argument('-n', action='store', help='Device name', required=True)
-    deleteDevice_parser.add_argument('-handler', action='store', help='handler', required=True)
+    deleteDevice_parser.add_argument('-z','--handler', action='store', help='handler', required=True)
 
     # A list device command
     listDevice_parser = subparsers.add_parser('list_device', help='Delete a device belonging to handler')
 
     # A set device attribute command
+    
     setDevice_parser = subparsers.add_parser('set_dev_attr', help='Set device attribute')
-    setDevice_parser.add_argument('-n', dest="dev_name", action='store', help='Device name', required=True)
+    setDevice_parser.add_argument('-n', action='store', help='Device name', required=True)
+    setDevice_parser.add_argument('-z','--handler', action='store', help='handler', required=True)
     setDevice_parser.add_argument('-u', "--usn", action=CmndAction, help='usn', required=False)
-    setDevice_parser.add_argument('-t', action=CmndAction, help='thread_num', required=False)
-    setDevice_parser.add_argument('-l', action=CmndAction, help='threads_pool_type', required=False)
-    setDevice_parser.add_argument('-i', action=CmndAction, help='t10_dev_id', required=False)
-    setDevice_parser.add_argument('-P', action=CmndAction, help='thin_provisioned', required=False)
+    setDevice_parser.add_argument('-i', "--t10_dev_id", action=CmndAction, help='t10_dev_id', required=False)
+    setDevice_parser.add_argument('-p', "--threshold_percentage", action=CmndAction, help='threshold_percentage', required=False)
+    setDevice_parser.add_argument('-t', "--thread_num", action=CmndAction, help='thread_num', required=False)
+    setDevice_parser.add_argument('-l', "--thread_pool_type", action=CmndAction, help='threads_pool_type', required=False)
+    setDevice_parser.add_argument('-d', "--detached", action=CmndAction, help='detached', required=False)
+    setDevice_parser.add_argument('-r', "--rescan_disk_size", action=CmndAction, help='rescan_disk_size', required=False)
+    setDevice_parser.add_argument('-s', "--filesize", action=CmndAction, help='file size', required=False)
+    setDevice_parser.add_argument('-P', "--thin_provisioned", action=CmndAction, help='thin_provisioned', required=False)
+    setDevice_parser.add_argument('-q', "--disable_dev", action=CmndAction, help='disable device', required=False)
 
+    # A get device attribute command
+    getDevice_parser = subparsers.add_parser('get_dev_attr', help='get device attribute')
+    getDevice_parser.add_argument('-n', action='store', help='Device name', required=True)
+    getDevice_parser.add_argument('-z','--handler', action='store', help='handler', required=True)
 
-    # A create command
-    create_parser = subparsers.add_parser('create', help='Create a directory')
-    create_parser.add_argument('--dirname', action=CmndAction, help='New directory to create', required=True)
-    create_parser.add_argument('-d','--detach', action=CmndAction, help='New directory to create', required=True)
-    create_parser.add_argument('--P', action=CmndAction, help='New directory to create', required=True)
+    # A get device naa attribute command
+    getNaaDevice_parser = subparsers.add_parser('get_naa', help='get naa')
+    getNaaDevice_parser.add_argument('-n', action='store', help='Device name', required=True)
 
-    create_parser.add_argument('--read-only', action='store_true',
-                               help='Set permissions to prevent writing to the directory',
-                               )
-
-    # A delete command
-    delete_parser = subparsers.add_parser('delete', help='Remove a directory')
-    delete_parser.add_argument('dirname', action='store', help='The directory to remove')
-    delete_parser.add_argument('--recursive', '-r', default=False, action='store_true',
-                               help='Remove the contents of the directory, too',
-                               )
+    # A get device iostat attribute command
+    getiostatDevice_parser = subparsers.add_parser('get_dev_iostat', help='get device iostat')
 
     return parser
     print "Setting up SubCommands"
 
 def main():
-    print "Starting main"
-   	
     parser = setup_SubCommands()
     parse_Arguments(parser)
-    #import pdb;pdb.set_trace();	
     
-    exec_commands(parser.parse_args())
+    exec_commands(parser, parser.parse_args())
 
 if __name__ == "__main__":
     main()

@@ -1,10 +1,11 @@
 #!/usr/bin/python
 import sys
+import os
 import argparse
 import subprocess
 import pdb
 #populate this map as key value pairs based on options sent in the user
-add_lun_options_set = {}
+options_set = {}
 
 class CmndAction(argparse.Action):
     def __init__(self, option_strings, dest, nargs=None, **kwargs):
@@ -13,97 +14,169 @@ class CmndAction(argparse.Action):
         super(CmndAction, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
-#        print '%r %r %r' % (namespace, values, option_string)
         setattr(namespace, self.dest, values)
-        add_lun_options_set[option_string] = {}
-        add_lun_options_set[option_string]['isset'] = True
-        add_lun_options_set[option_string]['value'] = values
+        options_set[option_string] = {}
+        options_set[option_string]['isset'] = True
+        options_set[option_string]['value'] = values
 
 def add_default_exec(cmnd_opts):
     try:
-        print "Doing some commands"
-        path = '/sys/kernel/scst_tgt/targets/' +cmnd_opts.d+ '/' +cmnd_opts.t+ '/ini_groups/mygroup/luns/mgmt'
-        cmd='echo "add ' +cmnd_opts.D+ ' ' +cmnd_opts.l+ ' ">' + path
+        group_exist = "/sys/kernel/scst_tgt/targets/iscsi/" +cmnd_opts.target_name+ "/ini_groups/default"
+        if not os.path.isdir(group_exist):
+            group = 'echo "create default" >/sys/kernel/scst_tgt/targets/' +cmnd_opts.driver_name+ '/' +cmnd_opts.target_name+ '/ini_groups/mgmt'
+            subprocess.check_output(group, shell=True )
+        path = '/sys/kernel/scst_tgt/targets/' +cmnd_opts.driver_name+ '/' +cmnd_opts.target_name+ '/ini_groups/default/luns/mgmt'
+        cmd='echo "add ' +cmnd_opts.device_name+ ' ' +cmnd_opts.lun+ ' ">' + path
         subprocess.check_output(cmd, shell=True )
-	    #pdb.set_trace();
+
+        print "Add lun " + cmnd_opts.lun  + " success"
     except subprocess.CalledProcessError:
-        print "error Executing the command"   
+        print "error Executing the add_lun command"   
+
+def detached_exec(cmnd_opts):
+    print "Need To implement" 
+
+def readonly_exec(cmnd_opts):
+    print "Need To implement read only"
 
 def del_default_exec(cmnd_opts):
     try:
-        print "Enter into del_lun"
-        path = '/sys/kernel/scst_tgt/targets/' +cmnd_opts.d+ "/" +cmnd_opts.t+ '/ini_groups/mygroup/luns/mgmt'
-        cmd='echo "del ' +cmnd_opts.l+ ' ">' + path
-        print "=====Doing delete device====="
+        path = '/sys/kernel/scst_tgt/targets/' +cmnd_opts.driver_name+ "/" +cmnd_opts.target_name+ '/ini_groups/default/luns/mgmt'
+        cmd='echo "del ' +cmnd_opts.lun+ ' ">' + path
         subprocess.check_output(cmd, shell=True )
-        print "=====Successfully deleted device====="
-        print "=====leaving del_device====="
-        #com = 'del '  +cmnd_opts.l+ ' ">'
-        #cmd = 'echo "' + com +path
-        #pdb.set_trace();
-
+        print "Delete lun " + cmnd_opts.lun  + " success"
     except subprocess.CalledProcessError:
-        print "error Executing the del_device command"
+        print "error Executing the del_lun command"
 
 def get_default_exec(cmnd_opts):
     try:
-        print "Enter into get_lun"
-        print "=====Doing get_lun===="
         cmd = 'scstadmin -list_target ' +cmnd_opts.t + ' -driver ' +cmnd_opts.d
         output = subprocess.check_output(cmd, shell=True )
         print output
-        print "=====leaving get_lun====="
     except subprocess.CalledProcessError:
         print "error Executing the get_lun command"
 
 def get_scst_exec(cmnd_opts):
     try:
-        print "Enter into get_scst_attr"
-        print "=====Doing get_scst_attr===="
+        print "scst attributes are:"
         output = subprocess.check_output("scstadmin -list_scst_attr", shell=True )
         print output
-        print "=====leaving get_scst_attr====="
     except subprocess.CalledProcessError:
         print "error Executing the get_scst_attr command"
+
+def get_session_exec(cmnd_opts):
+    try:
+        print "session list:"
+        output = subprocess.check_output("scstadmin -list_sessions", shell=True )
+        print output
+    except subprocess.CalledProcessError:
+        print "error Executing the get_session_attr command"
+
+def set_scst_attr_default_exec(cmnd_opts):
+    print "dummy nothing to do"
+
+def set_maxtaskletcmd_exec(cmnd_opts, max):
+    try:
+        cmd ="echo " +max+ " >/sys/kernel/scst_tgt/max_tasklet_cmd"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def set_threads_exec(cmnd_opts, threads):
+    try:
+        cmd ="echo " +threads+ " >/sys/kernel/scst_tgt/threads"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def set_setup_id_exec(cmnd_opts, id):
+    try:
+        cmd ="echo " +id+ " >/sys/kernel/scst_tgt/setup_id"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
+
+def set_EUT_test_mode_exec(cmnd_opts, test_mode):
+    print "Need to implement"
+
+def set_peer_miss_act_exec(cmnd_opts, peer_miss):
+    print "Need to implement"
+
+def set_enable_iostat_exec(cmnd_opts, io):
+    print "dummy nothing to do"
+
+def set_peer_ip_exec(cmnd_opts, peer_ip):
+    print "dummy nothing to do"
+
+def set_trace_level_exec(cmnd_opts, trace_level):
+    try:
+        cmd = "echo " +trace_level+ " >/sys/kernel/scst_tgt/trace_level"
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        print "error Executing the command"
 
 def set_default_exec(cmnd_opts):
     print "dummy nothing to do"
 
 #set of commands to run for the options set
-add_lun_exec = {"default"  : add_default_exec
-#                   "-e"    : detached_exec,
-#                    "r"     : readonly
+add_lun_exec = {"default"                          : add_default_exec,
+                "-e"                               : detached_exec,
+                "r"                                : readonly_exec
                    }
 
-del_lun_exec = {"default"  : del_default_exec
+del_lun_exec = {"default"                          : del_default_exec
                    }
 
-get_lun_exec = {"default"  : get_default_exec
+get_lun_exec = {"default"                          : get_default_exec
                    }
 
-get_scst_exec = {"default"  : get_scst_exec
+get_scst_exec = {"default"                         : get_scst_exec
                    }
+
+get_session_exec = {"default"                      : get_session_exec
+                   }
+
+set_scst_attr_exec = {
+                 "default"                         : set_scst_attr_default_exec,
+                 "-m"                              : set_maxtaskletcmd_exec,
+                 "--maxtaskletcmd"                 : set_maxtaskletcmd_exec,
+                 "-t"                              : set_threads_exec,
+                 "--threads"                       : set_threads_exec,
+                 "-s"                              : set_setup_id_exec,
+                 "--setup_id"                      : set_setup_id_exec,
+                 "-e"                              : set_EUT_test_mode_exec,
+                 "--EUT_test_mode"                 : set_EUT_test_mode_exec,
+                 "-p"                              : set_peer_miss_act_exec,
+                 "--peer_miss_act"                 : set_peer_miss_act_exec,
+                 "-E"                              : set_enable_iostat_exec,
+                 "--enable_iostat"                 : set_enable_iostat_exec,
+                 "-P"                              : set_peer_ip_exec,
+                 "--peer_ip"                       : set_peer_ip_exec,
+                 "-r"                              : set_trace_level_exec,
+                 "--trace_level"                   : set_trace_level_exec,
+
+                   }
+
+global_cmnd_map = {
+                    "add_lun"               : add_lun_exec,  
+                    "del_lun"               : del_lun_exec,
+                    "get_lun"               : get_lun_exec,
+                    "get_scst_attr"         : get_scst_exec,
+                    "get_session_statistic" : get_session_exec,
+                    "set_scst_attr"         : set_scst_attr_exec
+                  }
 
 def exec_commands(cmnd_opts):
     #execute commands
-    print "Executing Arguments"
-    if sys.argv[1] == "add_lun":
-        add_lun_exec["default"](cmnd_opts);
-        for i in add_lun_options_set.iterkeys():
-            if add_lun_options_set[i]['isset'] == True:
-                add_lun_exec[i](cmnd_opts, add_lun_options_set[i]['value'])
-    if sys.argv[1] == "del_lun":
-        del_lun_exec["default"](cmnd_opts);
-    if sys.argv[1] == "get_lun":
-        get_lun_exec["default"](cmnd_opts);
-    if sys.argv[1] == "get_scst_attr":
-        get_scst_exec["default"](cmnd_opts);
+        global_cmnd_map[sys.argv[1]]["default"](cmnd_opts);
+        for i in options_set.iterkeys():
+            if options_set[i]['isset'] == True:
+                global_cmnd_map[sys.argv[1]][i](cmnd_opts, options_set[i]['value'])
 
 
 def parse_Arguments(parser):
     #parse arguments
-    print "Parsing Arguments"
-    arg1 = parser.parse_args()
+    parser.parse_args()
 
 def setup_SubCommands():
     #need to setup subCommands
@@ -114,31 +187,48 @@ def setup_SubCommands():
 
     # A list command
     addLun_parser = subparsers.add_parser('add_lun', help='Add lun to the target')
-    addLun_parser.add_argument('-d', action=CmndAction, help='driver name', required=True)
-    addLun_parser.add_argument('-t', action=CmndAction, help='target name', required=True)
-    addLun_parser.add_argument('-D', action=CmndAction, help='device name create by add_device', required=True)
-    addLun_parser.add_argument('-l', action=CmndAction, help='LUN', required=True)
+    addLun_parser.add_argument('-d','--driver_name', action='store', help='driver name', required=True)
+    addLun_parser.add_argument('-t', '--target_name', action='store', help='target name', required=True)
+    addLun_parser.add_argument('-D', '--device_name', action='store', help='device name create by add_device', required=True)
+    addLun_parser.add_argument('-l','--lun', action='store', help='LUN', required=True)
+    addLun_parser.add_argument('-e','--detached', action=CmndAction, help='readonly', required=False)
+    addLun_parser.add_argument('-r','--readonly', action=CmndAction, help='readonly', required=False)
 
     # A delete command
     delLun_parser = subparsers.add_parser('del_lun', help='Add lun to the target')
-    delLun_parser.add_argument('-d', action=CmndAction, help='driver name', required=True)
-    delLun_parser.add_argument('-t', action=CmndAction, help='target name', required=True)
-    delLun_parser.add_argument('-l', action=CmndAction, help='LUN', required=True)
+    delLun_parser.add_argument('-d','--driver_name', action='store', help='driver name', required=True)
+    delLun_parser.add_argument('-t', '--target_name', action='store', help='target name', required=True)
+    delLun_parser.add_argument('-l','--lun', action='store', help='LUN', required=True)
 
     # A get_lun command
     getLun_parser = subparsers.add_parser('get_lun', help='Get all lun in target')
-    getLun_parser.add_argument('-d', action=CmndAction, help='driver name', required=True)
-    getLun_parser.add_argument('-t', action=CmndAction, help='target name', required=True)
+    getLun_parser.add_argument('-d', action='store', help='driver name', required=True)
+    getLun_parser.add_argument('-t', action='store', help='target name', required=True)
 
     # A get_scst_attr command
     get_scstLun_parser = subparsers.add_parser('get_scst_attr', help='Get scst module attribute')
 
+    # A get_scst_attr command
+    get_sessionLun_parser = subparsers.add_parser('get_session_statistic', help='Get session list')
+    get_sessionLun_parser.add_argument('-d','--driver_name', action='store', help='driver name', required=True)
+    get_sessionLun_parser.add_argument('-t','--target_name', action='store', help='target name', required=True)
+    get_sessionLun_parser.add_argument('-s', '--sid', action='store', help='target name', required=False)
+
+    # A get_scst_attr command
+    set_scst_attrLun_parser = subparsers.add_parser('set_scst_attr', help='set scst attr')
+    set_scst_attrLun_parser.add_argument('-m','--maxtaskletcmd', action=CmndAction, help='maxtaskletcmd', required=False)
+    set_scst_attrLun_parser.add_argument('-t','--threads', action=CmndAction, help='threads', required=False)
+    set_scst_attrLun_parser.add_argument('-s','--setup_id', action=CmndAction, help='setup_id', required=False)
+    set_scst_attrLun_parser.add_argument('-e','--EUT_test_mode', action=CmndAction, help='EUT_test_mode', required=False)
+    set_scst_attrLun_parser.add_argument('-p','--peer_miss_act', action=CmndAction, help='peer_miss_act', required=False)
+    set_scst_attrLun_parser.add_argument('-E','--enable_iostat', action=CmndAction, help='enable_iostat', required=False)
+    set_scst_attrLun_parser.add_argument('-P','--peer_ip', action=CmndAction, help='peer ip', required=False)
+    set_scst_attrLun_parser.add_argument('-r','--trace_level', action=CmndAction, help='trace level', required=False)
 
     return parser
     print "Setting up SubCommands"
 
 def main():
-    print "Starting main"
     parser = setup_SubCommands()
     parse_Arguments(parser)
     exec_commands(parser.parse_args())
